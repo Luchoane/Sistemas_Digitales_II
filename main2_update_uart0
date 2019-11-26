@@ -1,0 +1,182 @@
+//#include <LPC845.h>
+
+#define UART0CLKSEL     (*((int*)0x40048090U))
+
+// Controles
+#define SYSAHBCLKCTRL0  (*((int*)0x40048080U))
+#define GPIO0           (1<<6)
+#define SWM             (1<<7)
+#define UART0           (1<<14)
+#define GPIO1           (1<<20)
+#define CTIMER0         (1<<25)
+
+#define PRESETCTRL0     (*((int*)0x40048088U))
+#define UART0_RST_N     (1<<14)
+
+// USART0
+#define USART0          0x40064000U
+#define USART0_BRG      (*((int*) (USART0 + 0x020U)))
+#define USART0_CFG      (*((int*) (USART0 + 0x000U)))
+#define ENABLE          (1<<0)
+
+// DATs RX-TX
+#define TXDAT_USART0    (*((int*)0x4006401C))
+#define RXDAT_USART0    (*((int*)0x40064014))
+
+#define INTENSET_USART0 (*((int*)0x4006400CU))
+#define RXRDYEN         (1<<0)
+#define TXRDYEN         (1<<2)
+#define INTSTAT_USART0  (*((int*)0x40064024U))
+#define RXRDY           (1<<0)
+#define TXRDY           (1<<2)
+
+#define STAT_USART0     (*((int*)0x40064008U))
+#define TXRDY           (1<<2)
+#define TXIDLE          (1<<3)
+
+#define PINASSIGN0      (*((int*)0x4000C000U))
+
+
+#define NVIC_ISER0      (*((int*) 0xE000E100U)) // Registro ISER0 de NVIC
+#define ISE_CT32b0      (1<<23)
+#define ISE_UART0       (1<<3)
+
+#define CTIMER_BASE     0x40038000U             // Direccion base de CTIMER
+#define CTIMER_IR       (*((int*) (CTIMER_BASE + 0x000U))) // Registro de interrupcion de CTIMER
+#define TCR             (*((int*) (CTIMER_BASE + 0x004U))) // Registro de control de CTIMER
+#define TC              (*((int*) (CTIMER_BASE + 0x008)))
+#define MCR             (*((int*) (CTIMER_BASE + 0x014U))) // Registro de control de MATCH 
+#define MR0             (*((int*) (CTIMER_BASE + 0x018U))) // Registro MATCH 0
+#define MR1             (*((int*) (CTIMER_BASE + 0x01C))) // Registro MATCH 1
+#define MR3             (*((int*) (CTIMER_BASE + 0x024))) // Registro MATCH 3
+#define MSR1            (*((int*) (CTIMER_BASE + 0x07C))) // Registro MATCH SHADOW 1
+#define MSR3            (*((int*) (CTIMER_BASE + 0x084))) // Registro MATCH SHADOW 3
+
+// PWM
+#define PWMC            (*((int*) (CTIMER_BASE + 0x074)))
+#define PINASSIGN4      (*((int*) 0x4000C010))
+
+// ADC
+#define PINENABLE0      (*((int*) 0x4000C1C0))  // Para seleccionar funcion ADC en pin P0.15
+#define PDRUNCFG        (*((int*)0x40048238))         // Power configuration reg. 
+#define ADC_BASE        0x4001C000
+#define ADC_CTRL        (*((int*) (ADC_BASE + 0x000))) // Registro de control de ADC
+#define ADC_SEQA_CTRL   (*((int*) (ADC_BASE + 0x008))) // Registro de control de secuencia A
+#define ADC_DAT8        (*((int*) (ADC_BASE + 0x040))) // Registro de dato de canal 8
+
+#define GPIO            0xA0000000U
+#define DIR0            (*((int*) (GPIO + 0x2000U)))
+#define DIR1            (*((int*) (GPIO + 0x2004U)))
+#define PIN0            (*((int*) (GPIO + 0x2100U)))
+#define PIN1            (*((int*) (GPIO + 0x2104U)))
+
+#define GREEN   (1<<0)
+#define BLUE    (1<<1)
+#define RED     (1<<2)
+#define RGB     (RED+GREEN+BLUE)
+#define BUTTON  (1<<4)
+
+
+
+void send_uart0 ( char* word );
+
+void usart_init (void)
+{
+  SYSAHBCLKCTRL0 |= UART0;              //Doy clock a UART0
+  PRESETCTRL0 &= ~(UART0_RST_N);        //Sacamos de reset a USART0
+  PRESETCTRL0 |= (UART0_RST_N); 
+  
+  SYSAHBCLKCTRL0 |= SWM;                //On clock a Switch Matrix
+  
+  PINASSIGN0 &= ~(0xFFFF);              //Borro los 16 bit menos significativos
+
+  PINASSIGN0 |= (25<<0);                //PIO0_25 como USART0_TX
+  PINASSIGN0 |= (24<<8);                //PIO0_24 como USART0_RX
+ 
+  SYSAHBCLKCTRL0 &= ~(SWM);             //Off clock Switch Matrix
+ 
+  USART0_BRG |= 0x4D;                   //Escribiendo 4D en este registro, con la f=12MHz por defecto del micro, uart0 trabajara a 9600 baudios
+ 
+  UART0CLKSEL    &= ~(0x7);             //Seleccion de fuente de clock para USART0
+ 
+  USART0_CFG |= ENABLE;                 //Habilitamos periferico uart0
+  USART0_CFG |=  (1 << 2);              //8 bits de datos 
+  
+  INTENSET_USART0 = RXRDYEN;            //Habilitamos interrupciones de uart0
+  
+  NVIC_ISER0 |= ISE_UART0;              //Se avisa a NVIC de las interrupciones de uart0
+}
+
+void pwm_init (void)
+{
+  SYSAHBCLKCTRL0 |= SWM;                //Clock a Switch Matrix
+  
+  PINASSIGN4 &= ~(0xFF << 8);           //borro los 16 bit de 15:8
+  PINASSIGN4 |= (17<<8);                //PIO0_17 es IO de PWM ???
+ 
+  SYSAHBCLKCTRL0 &= ~(SWM);             //quito clock a Switch Matrix
+  
+  //Configuracion de PWM
+  PWMC |= (1U<<3); //se configura al PWM de forma tal que el registro MR3 sea el que defina cuando conmuta la salida de los LEDs.
+}
+
+void timer_init (void)
+{
+  // f = 12MHz
+  SYSAHBCLKCTRL0 |= CTIMER0;            // Habilitamos clock en CTIMER
+  PRESETCTRL0    |= (1U << 25);         // Sacamos de reset al timer
+  //MCR |= (1U << 0)|(1U << 1);         // Reset de TC(bit 1) e interrupcion (bit 0) en Match0
+  MCR |= (1U << 1) | (1U<<0);           // cuando TC=MR0, hay interrupcion y resetea TC. se carga en MR3 el valor de MSR3.
+  MCR |= (1U << 27);
+  MR0  = 60000U;                        // Match 0 cada 0.001 segundos 
+  //MR0  = 6000000U;                    // Match cada 1/2 segundo
+  MR3  = 600U;			        // Valor inicial de MR3
+  TCR |= (1U << 0);                     // Habilita timer (comienza conteo)
+  
+  NVIC_ISER0 |= ISE_CT32b0;             // Habilitamos interrupciones de timer en NVIC  
+  
+}
+
+int main()
+{
+
+  usart_init();
+  timer_init();
+  pwm_init();
+  
+  SYSAHBCLKCTRL0 |= (GPIO1 + GPIO0);
+ 
+  DIR0 &= 0x00;
+  DIR1 &= 0x00;
+  DIR1 |= RGB;
+ 
+  PIN1 |= 0xFF;
+  
+  //PIN1  ^= ( GREEN ) ;
+  
+  while(1){
+ }
+}
+
+void UART0_IRQHandler()
+{
+  INTSTAT_USART0 &= ~(RXRDY);           // Bajamos el flag de uart
+  TXDAT_USART0 = RXDAT_USART0;          // en caso de que quiera transmitir, no se usa
+  if( RXDAT_USART0 == 's' )             // Bajar intensidad con s
+    MSR3 = MSR3+60;
+  if( RXDAT_USART0 == 'w' )             // Subir intensidad con w
+    MSR3 = MSR3-60;
+}
+
+void CTIMER0_IRQHandler()
+{
+  
+  CTIMER_IR |= (1U << 0);  // borramos flag de interrupcion escribiendo un 1 en bit 0 de CTIMER_IR
+  PIN1  ^= ( BLUE ) ;    // Conmuta estado de LEDs
+  
+} 
+
+void SystemInit()
+{
+  // vacio
+};
