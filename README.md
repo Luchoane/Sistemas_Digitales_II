@@ -135,6 +135,8 @@ Parsea `log.log` y muestra el log. Cod: 200. Respuesta de ejemplo:
 ```
 19-05-2020 18:01 [req] {'name': 'esto no es coca papi rule', 'rule': 'rule EstoNoEsCocaPapiRule\r\n{\r\n strings:\r\n $my_text_string = "prueba"\r\n condition:\r\n $my_text_string\r\n}'}
 19-05-2020 18:01 [res] ('{"id": 1, "name": "EstoNoEsCocaPapiRule", "rule": "rule EstoNoEsCocaPapiRule\\r\\n{\\r\\n strings:\\r\\n $my_text_string = \\"prueba\\"\\r\\n condition:\\r\\n $my_text_string\\r\\n}"}\n', 201)
+19-05-2020 18:16 [error] 405 Method Not Allowed: The method is not allowed for the requested URL.
+19-05-2020 18:16 [error] 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
 ```
 
 
