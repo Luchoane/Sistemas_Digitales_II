@@ -172,6 +172,60 @@ Toma el texto para entregarle al driver de Yara y matchear con las reglas especi
 `{"status": "ok", "results": [{"rule_id": 1, "matched": true}, {"rule_id": 2, "matched": true}]}`
 
 
+### Analyze File
+Metodo: `POST`
+Path: `/api/analyze/file`
+
+
+`curl -X POST http://localhost:1234/api/analyze/file -H "Content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW" -F file="@prueba.txt" -F "rules=1,2"`
+
+
+- prueba.txt
+
+
+```
+prueba
+```
+
+
+El driver de Yara analiza el file y matchea con las reglas especificadas. Cod: 200. Respuesta de ejemplo:
+
+
+`{"status": "ok", "results": [{"rule_id": 1, "matched": true}, {"rule_id": 2, "matched": true}]}`
+
+
+### Analyze URL
+Metodo: `POST`
+Path: `/api/analyze/url`
+
+
+`curl -X POST --url localhost:1234/api/analyze/url -H "Content-type: application/json" -d @json_url.txt`
+
+
+- json_url.txt
+
+
+```
+{
+"url": "https://es.wikipedia.org/wiki/Lorem_ipsum",
+"rules": [
+	{
+		"rule_id": 1
+	},
+	{
+		"rule_id": 2
+	}
+	]
+}
+```
+
+
+`requests` toma el contenido de la URL para que el driver de Yara analice el texto de la página y matchea con las reglas especificadas. Cod: 200. Respuesta de ejemplo:
+
+
+`{"status": "ok", "results": [{"rule_id": 1, "matched": true}, {"rule_id": 2, "matched": false}]}`
+
+
 
 
 
