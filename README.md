@@ -111,7 +111,7 @@ Path: `/api/get_ids`
 `curl --url localhost:1234/api/get_ids`
 
 
-Parsea `reglas.csv` y muestra los ID de las reglas y sus nombres. Cod: 20. Respuesta de ejemplo:
+Parsea `reglas.csv` y muestra los ID de las reglas y sus nombres. Cod: 200. Respuesta de ejemplo:
 
 
 ```
