@@ -16,7 +16,6 @@ Flask
 requests
 ```
 
-## Files:
 
 ## Endpoints: (dentro de la carpeta "testing" se pueden econtrar los .json de ejemplo para probar)
 
